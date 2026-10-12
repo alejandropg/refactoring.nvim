@@ -1,3 +1,4 @@
+-- CI baseline: upstream master on the current Neovim stable (do not merge)
 ---@module "mini.test"
 
 local child = MiniTest.new_child_neovim()
