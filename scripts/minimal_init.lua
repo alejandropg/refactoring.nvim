@@ -8,6 +8,13 @@ vim.cmd "set rtp+=deps/nvim-treesitter"
 require("mini.test").setup()
 require("mason").setup {
   install_root_dir = vim.fn.getcwd() .. "/deps/bin",
+  -- NOTE: the first registry with a package wins, see `tests/mason-registry`
+  -- TODO: remove `registries` (and `tests/mason-registry`) once Mason can
+  -- install kotlin-lsp: https://github.com/mason-org/mason-registry/pull/17323
+  registries = {
+    "file:" .. vim.fn.getcwd() .. "/tests/mason-registry",
+    "github:mason-org/mason-registry",
+  },
 }
 require("nvim-treesitter").setup {
   install_dir = vim.fn.getcwd() .. "/deps/parsers",
@@ -57,7 +64,15 @@ vim.lsp.config("pyright", {
     ".git",
   },
 })
-vim.lsp.enable { "lua_ls", "clangd", "pyright" }
+vim.lsp.config("kotlin_lsp", {
+  -- NOTE: the tests connect to a shared server, see `tests/kotlin_lsp.lua`
+  cmd = require("tests.kotlin_lsp").cmd,
+  filetypes = { "kotlin" },
+  root_markers = { "settings.gradle.kts" },
+  -- NOTE: don't start it for Kotlin buffers outside `tests/files/kotlin_project`
+  workspace_required = true,
+})
+vim.lsp.enable { "lua_ls", "clangd", "pyright", "kotlin_lsp" }
 
 vim.g.mapleader = " "
 vim.keymap.set("n", "<leader>ai", function()

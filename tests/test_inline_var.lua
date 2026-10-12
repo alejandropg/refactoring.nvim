@@ -153,4 +153,50 @@ T["python"]["comparison operator"] = function()
   validate(lines, { 2, 4 }, expected_lines)
 end
 
+T["kotlin"] = MiniTest.new_set {
+  hooks = {
+    pre_once = function()
+      require("tests.kotlin_lsp").start()
+    end,
+    pre_case = function()
+      child.lua [[
+vim.api.nvim_create_autocmd('Filetype', {
+  pattern = 'kotlin',
+  command = 'setlocal expandtab shiftwidth=4'
+})
+]]
+    end,
+  },
+}
+
+T["kotlin"]["comparison operator"] = function()
+  local lines = read_file "./tests/files/inline_var_comparison_operator_before.kt"
+  local expected_lines = read_file "./tests/files/inline_var_comparison_operator_after.kt"
+
+  -- NOTE: kotlin-lsp needs a build project as workspace root, not the whole repo
+  child.cmd "edit tests/files/kotlin_project/tmp.kt"
+  set_lines(lines)
+  set_cursor(2, 8)
+  child.lua [[vim.wait(60000, function() return #vim.lsp.get_clients({ bufnr = 0 }) == 1 end)]]
+  -- NOTE: kotlin-lsp takes a while to start, wait until it answers references
+  local ready = false
+  for _ = 1, 60 do
+    ready = child.lua_get [[(function()
+      local params = vim.lsp.util.make_position_params(0, "utf-16")
+      params.context = { includeDeclaration = false }
+      local results = vim.lsp.buf_request_sync(0, "textDocument/references", params, 5000) or {}
+      for _, r in pairs(results) do
+        if r.result and #r.result > 0 then return true end
+      end
+      return false
+    end)()]]
+    if ready then break end
+    sleep(1000)
+  end
+  eq(ready, true)
+  child.type_keys " ai"
+  child.lua [[vim.wait(30000, function() return #vim.api.nvim_buf_get_lines(0, 0, -1, true) == 7 end)]]
+  eq(get_lines(), vim.split(expected_lines, "\n"))
+end
+
 return T
