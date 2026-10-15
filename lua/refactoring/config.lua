@@ -810,6 +810,13 @@ local inline_func_code_generation = {
   },
 }
 
+-- Escapes `"`, `\` and `$` (string templates) inside of a Kotlin string literal
+---@param text string
+---@return string
+local function kotlin_string(text)
+  return (text:gsub('[\\"$]', "\\%0"))
+end
+
 ---@type refactor.print_var.CodeGeneration
 local print_var_code_generation = {
   print_var = {
@@ -883,6 +890,14 @@ local print_var_code_generation = {
         opts.identifier
       )
     end,
+    kotlin = function(opts)
+      return ('println("%s %s %s: $%s")'):format(
+        kotlin_string(opts.debug_path),
+        kotlin_string(opts.identifier_str),
+        opts.count,
+        opts.identifier
+      )
+    end,
   },
 }
 print_var_code_generation.print_var.typescript = print_var_code_generation.print_var.javascript
@@ -920,6 +935,9 @@ local print_loc_code_generation = {
     end,
     php = function(opts)
       return ([[printf('%s %s ');]]):format(opts.debug_path, opts.count)
+    end,
+    kotlin = function(opts)
+      return ('println("%s %s")'):format(kotlin_string(opts.debug_path), opts.count)
     end,
   },
 }
@@ -996,6 +1014,14 @@ local print_exp_code_generation = {
       return ([[printf('%s %s %s: %%s', %s);]]):format(
         opts.debug_path,
         opts.expression_str,
+        opts.count,
+        opts.expression
+      )
+    end,
+    kotlin = function(opts)
+      return ('println("%s %s %s: ${%s}")'):format(
+        kotlin_string(opts.debug_path),
+        kotlin_string(opts.expression_str),
         opts.count,
         opts.expression
       )
