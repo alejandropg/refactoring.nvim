@@ -1,6 +1,5 @@
-; Statements with a body have their own patterns below, with `inside`. They're
-; left out of this list rather than excluded with `#not-kind-eq?`, which comes
-; from nvim-treesitter, not Neovim.
+; `val a = 1`, `a = 1`, `f(a)`, `return a`
+; All types but those with a body below: `#not-kind-eq?` isn't in Neovim.
 (statements
   [
     (additive_expression)
@@ -53,14 +52,7 @@
     (when_expression)
   ] @output_statement)
 
-; A loop's label (`outer@ for`) is a separate node before the loop: it's the
-; statement extract variable inserts above, and the loop is only used for its
-; body (`inside_only`).
-
-; Loops without a label: the first statement, or after anything but a label.
-; The label is told by its text (`name@`; a comment can end in `@` too) because
-; a list of the other types before the `.` anchor makes tree-sitter skip some
-; matches (a loop right after another loop).
+; `for (a in xs) { ... }`, `while (a) { ... }`, `do { ... } while (a)`
 (statements
   .
   [
@@ -75,6 +67,9 @@
         (statements)? @output_statement.inside)?)
   ] @output_statement)
 
+; `f()`
+; `for (a in xs) { ... }`
+; The label is told by its text: a type list before `.` skips a loop after a loop.
 ((statements
   (_) @_previous
   .
@@ -91,8 +86,8 @@
   ] @output_statement)
   (#not-lua-match? @_previous "^[^/].*@$"))
 
-; A loop's label, with the loop's body: a debug print with the cursor on the
-; label goes into the body or above the label.
+; `outer@ for (a in xs) { ... }`
+; The label isn't in the loop's node: insert above the label, not after it.
 (statements
   (label) @output_statement
   .
@@ -108,7 +103,8 @@
         (statements)? @output_statement.inside)?)
   ])
 
-; A labelled loop
+; `outer@ for (a in xs) { ... }`
+; `inside_only`: only the loop's body is used.
 ((statements
   (label)
   .
@@ -125,25 +121,28 @@
   ] @output_statement)
   (#set! inside_only))
 
-; Only in statement position: `val m = if (a) { 1 } else { 2 }` isn't a statement.
+; `if (a) { ... }`
 (statements
   (if_expression
     consequence: (control_structure_body
       (statements)? @output_statement.inside)?) @output_statement)
 
-; Local functions
+; `fun f() { fun g() { ... } }`
 (statements
   (function_declaration
     (function_body
       (statements)? @output_statement.inside)?) @output_statement)
 
-; Top-level and member functions
+; `fun f() { ... }`, `class A { fun f() { ... } }`
+; `inside_only`: not a statement, only its body is used.
 ((function_declaration
   (function_body
     (statements) @output_statement.inside)) @output_statement
   (#not-has-parent? @output_statement statements)
   (#set! inside_only))
 
+; `{ a -> ... }`
+; `inside_only`: not a statement, only its body is used.
 (lambda_literal
   (statements) @output_statement.inside
   (#set! inside_only)) @output_statement

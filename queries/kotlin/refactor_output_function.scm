@@ -1,3 +1,5 @@
+; `// a`
+; `fun f() { ... }`
 (source_file
   _*
   [
@@ -7,6 +9,7 @@
   .
   (function_declaration) @output_function)
 
+; `class A { /* a */ fun f() { ... } }`
 (class_body
   _*
   [
