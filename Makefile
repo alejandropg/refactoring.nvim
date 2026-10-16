@@ -23,9 +23,6 @@ deps:
 	git clone --filter=blob:none https://github.com/lewis6991/async.nvim deps/async.nvim
 	git clone --filter=blob:none https://github.com/mason-org/mason.nvim deps/mason.nvim
 	git clone --branch main --filter=blob:none https://github.com/nvim-treesitter/nvim-treesitter deps/nvim-treesitter
-# TODO: remove the yq check (and tests/mason-registry) once Mason can install
-# kotlin-lsp: https://github.com/mason-org/mason-registry/pull/17323
-	@command -v yq > /dev/null || { echo "yq is required to read tests/mason-registry" >&2; exit 1; }
 	nvim --headless --clean -u scripts/minimal_init.lua -c "MasonInstall lua-language-server clangd pyright kotlin-lsp" -c qall
 	nvim --headless --clean -u scripts/minimal_init.lua -l deps/nvim-treesitter/scripts/install-parsers.lua lua java kotlin php go powershell c c_sharp cpp javascript python ruby tsx vim markdown
 

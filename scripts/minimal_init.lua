@@ -6,13 +6,11 @@ vim.cmd "set rtp+=deps/mason.nvim"
 vim.cmd "set rtp+=deps/nvim-treesitter"
 
 require("mini.test").setup()
+
 require("mason").setup {
   install_root_dir = vim.fn.getcwd() .. "/deps/bin",
-  -- NOTE: the first registry with a package wins, see `tests/mason-registry`
-  -- TODO: remove `registries` (and `tests/mason-registry`) once Mason can
-  -- install kotlin-lsp: https://github.com/mason-org/mason-registry/pull/17323
   registries = {
-    "file:" .. vim.fn.getcwd() .. "/tests/mason-registry",
+    "lua:refactoring_mason_index",
     "github:mason-org/mason-registry",
   },
 }
