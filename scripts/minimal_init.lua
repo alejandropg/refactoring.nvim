@@ -63,9 +63,16 @@ vim.lsp.config("pyright", {
   },
 })
 vim.lsp.config("kotlin_lsp", {
-  cmd = { "intellij-server", "--stdio" },
   filetypes = { "kotlin" },
-  root_markers = { "settings.gradle.kts" },
+  cmd = { "intellij-server", "--stdio" },
+  root_markers = {
+    "settings.gradle",
+    "settings.gradle.kts",
+    "pom.xml",
+    "build.gradle",
+    "build.gradle.kts",
+    "workspace.json",
+  },
   -- NOTE: don't start it for Kotlin buffers outside `tests/files/kotlin_project`
   workspace_required = true,
 })
