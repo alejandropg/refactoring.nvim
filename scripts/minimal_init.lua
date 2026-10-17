@@ -63,8 +63,7 @@ vim.lsp.config("pyright", {
   },
 })
 vim.lsp.config("kotlin_lsp", {
-  -- NOTE: the tests connect to a shared server, see `tests/kotlin_lsp.lua`
-  cmd = require("tests.kotlin_lsp").cmd,
+  cmd = { "intellij-server", "--stdio" },
   filetypes = { "kotlin" },
   root_markers = { "settings.gradle.kts" },
   -- NOTE: don't start it for Kotlin buffers outside `tests/files/kotlin_project`
