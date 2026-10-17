@@ -1,0 +1,38 @@
+name: Measure kotlin-lsp startup
+
+on:
+  push:
+    branches: [measure/kotlin-lsp-startup]
+  workflow_dispatch:
+
+jobs:
+  measure:
+    name: Measure (${{ matrix.neovim_version }})
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim_version: ["stable", "nightly"]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: tree-sitter/setup-action/cli@v2
+      - name: Setup neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim_version }}
+      - name: Setup deps
+        run: make deps
+      - name: Measure (3 runs, a fresh server each)
+        run: |
+          for i in 1 2 3; do
+            echo "=== run $i"
+            nvim --headless --clean -u scripts/minimal_init.lua -c "luafile scripts/measure_kotlin_lsp.lua"
+          done
+      - name: Run the Kotlin test as in the PR
+        run: |
+          start=$(date +%s.%N)
+          make test_inline_var
+          echo "make test_inline_var: $(echo "$(date +%s.%N) - $start" | bc)s"
