@@ -39,6 +39,7 @@ end
 local function validate(lines, cursor, expected_lines)
   set_lines(lines)
   set_cursor(cursor[1], cursor[2])
+  local t0 = vim.uv.hrtime()
   child.lua [[vim.wait(60000, function()
     if #vim.lsp.get_clients({ bufnr = 0 }) ~= 1 then return false end
     local params = vim.lsp.util.make_position_params(0, "utf-16")
@@ -49,11 +50,13 @@ local function validate(lines, cursor, expected_lines)
     end
     return false
   end)]]
+  local t1 = vim.uv.hrtime()
   child.type_keys " ai"
   child.lua(
     "local expected = ... vim.wait(1500, function() return vim.deep_equal(vim.api.nvim_buf_get_lines(0, 0, -1, true), expected) end)",
     { vim.split(expected_lines, "\n") }
   )
+  io.stdout:write(string.format("\n[ci] %s lsp %dms edit %dms\n", child.bo.filetype, (t1 - t0) / 1e6, (vim.uv.hrtime() - t1) / 1e6))
   eq(get_lines(), vim.split(expected_lines, "\n"))
 end
 
