@@ -1,6 +1,8 @@
 name: Run tests
 
 on:
+  push:
+    branches: ["ci/**"]
   pull_request:
     paths: ["lua/**", "tests/**", "plugin/**", "queries/**"]
 
