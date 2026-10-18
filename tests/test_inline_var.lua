@@ -33,22 +33,27 @@ local set_cursor = function(row, col)
   child.api.nvim_win_set_cursor(0, { row, col })
 end
 
----@param ms integer
-local sleep = function(ms)
-  vim.uv.sleep(ms)
-  -- Poke child's event loop to make it up to date
-  child.api.nvim_eval "1"
-end
-
 ---@param lines string
 ---@param cursor {[1]: integer, [2]: integer}
 ---@param expected_lines string
 local function validate(lines, cursor, expected_lines)
   set_lines(lines)
   set_cursor(cursor[1], cursor[2])
-  child.lua [[vim.wait(1000, function() return #vim.lsp.get_clients({ bufnr = 0 }) == 1  end)]]
+  child.lua [[vim.wait(60000, function()
+    if #vim.lsp.get_clients({ bufnr = 0 }) ~= 1 then return false end
+    local params = vim.lsp.util.make_position_params(0, "utf-16")
+    params.context = { includeDeclaration = false }
+    local results = vim.lsp.buf_request_sync(0, "textDocument/references", params) or {}
+    for _, r in pairs(results) do
+      if r.result and #r.result > 0 then return true end
+    end
+    return false
+  end)]]
   child.type_keys " ai"
-  sleep(1500)
+  child.lua(
+    "local expected = ... vim.wait(1500, function() return vim.deep_equal(vim.api.nvim_buf_get_lines(0, 0, -1, true), expected) end)",
+    { vim.split(expected_lines, "\n") }
+  )
   eq(get_lines(), vim.split(expected_lines, "\n"))
 end
 
@@ -172,28 +177,7 @@ T["kotlin"]["comparison operator"] = function()
 
   -- NOTE: kotlin-lsp needs a build project as workspace root, not the whole repo
   child.cmd "edit tests/files/kotlin_project/tmp.kt"
-  set_lines(lines)
-  set_cursor(2, 8)
-  child.lua [[vim.wait(60000, function() return #vim.lsp.get_clients({ bufnr = 0 }) == 1 end)]]
-  -- NOTE: kotlin-lsp takes a while to start, wait until it answers references
-  local ready = false
-  for _ = 1, 60 do
-    ready = child.lua_get [[(function()
-      local params = vim.lsp.util.make_position_params(0, "utf-16")
-      params.context = { includeDeclaration = false }
-      local results = vim.lsp.buf_request_sync(0, "textDocument/references", params, 5000) or {}
-      for _, r in pairs(results) do
-        if r.result and #r.result > 0 then return true end
-      end
-      return false
-    end)()]]
-    if ready then break end
-    sleep(1000)
-  end
-  eq(ready, true)
-  child.type_keys " ai"
-  child.lua [[vim.wait(30000, function() return #vim.api.nvim_buf_get_lines(0, 0, -1, true) == 7 end)]]
-  eq(get_lines(), vim.split(expected_lines, "\n"))
+  validate(lines, { 2, 8 }, expected_lines)
 end
 
 return T
